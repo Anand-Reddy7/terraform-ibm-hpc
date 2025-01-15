@@ -15,10 +15,14 @@ locals {
 # locals needed for deployer
 locals {
   # dependency: landing_zone -> deployer
-  vpc_id                     = var.vpc == null ? one(module.landing_zone.vpc_id) : var.vpc
+  vpc_id                     = var.vpc == null ? one(module.landing_zone.vpc_id) : data.ibm_is_vpc.itself[0].id
+  vpc                        = var.vpc == null ? one(module.landing_zone.vpc_name) : var.vpc
   bastion_subnets            = module.landing_zone.bastion_subnets
   kms_encryption_enabled     = var.key_management != null ? true : false
   boot_volume_encryption_key = var.key_management != null ? one(module.landing_zone.boot_volume_encryption_key)["crn"] : null
+  # boot_volume_encryption_key = var.key_management != null ? one(module.landing_zone.boot_volume_encryption_key)["crn"] : ""
+  # boot_volume_encryption_key = var.key_management != null ? (var.boot_volume_encryption_key != null ? var.boot_volume_encryption_key : one(module.landing_zone.boot_volume_encryption_key)["crn"]) : ""
+  # boot_volume_encryption_key = var.key_management != null ? one(module.landing_zone.boot_volume_encryption_key)["crn"] : null
   existing_kms_instance_guid = var.key_management != null ? module.landing_zone.key_management_guid : null
 
   # Future use
@@ -29,8 +33,8 @@ locals {
 # locals needed for landing_zone_vsi
 locals {
   # dependency: landing_zone -> deployer -> landing_zone_vsi
-  bastion_security_group_id  = module.deployer.bastion_security_group_id
-  bastion_public_key_content = module.deployer.bastion_public_key_content
+  bastion_security_group_id  = var.enable_bastion == true && var.enable_deployer == false ? module.deployer.bastion_security_group_id : ""
+  bastion_public_key_content = var.enable_bastion == true && var.enable_deployer == false ? module.deployer.bastion_public_key_content : ""
 
   # dependency: landing_zone -> landing_zone_vsi
   client_subnets   = module.landing_zone.client_subnets
@@ -53,7 +57,7 @@ locals {
 
   # dependency: landing_zone_vsi -> file-share
   compute_subnet_id         = local.compute_subnets[0].id
-  compute_security_group_id = module.landing_zone_vsi.compute_sg_id
+  compute_security_group_id = var.enable_bastion == true && var.enable_deployer == false ? module.landing_zone_vsi.compute_sg_id : []
   management_instance_count = sum(var.management_instances[*]["count"])
   default_share = local.management_instance_count > 0 ? [
     {
@@ -77,7 +81,13 @@ locals {
 # locals needed for DNS
 locals {
   # dependency: landing_zone -> DNS
-  resource_group_id = one(values(one(module.landing_zone.resource_group_id)))
+  resource_group = var.resource_group == null ? "workload-rg" : var.resource_group
+  resource_group_ids = {
+    # management_rg = var.resource_group == null ? module.landing_zone.resource_group_id[0]["management-rg"] : one(values(one(module.landing_zone.resource_group_id)))
+    service_rg  = var.resource_group == null ? module.landing_zone.resource_group_id[0]["service-rg"] : data.ibm_resource_group.resource_group[0].id
+    workload_rg = var.resource_group == null ? module.landing_zone.resource_group_id[0]["workload-rg"] : data.ibm_resource_group.resource_group[0].id
+  }
+  #resource_group_id = one(values(one(module.landing_zone.resource_group_id)))
   vpc_crn           = var.vpc == null ? one(module.landing_zone.vpc_crn) : one(data.ibm_is_vpc.itself[*].crn)
   # TODO: Fix existing subnet logic
   #subnets_crn       = var.vpc == null ? module.landing_zone.subnets_crn : ###
@@ -92,7 +102,8 @@ locals {
 # locals needed for dns-records
 locals {
   # dependency: dns -> dns-records
-  dns_instance_id = module.dns.dns_instance_id
+  dns_instance_id        = var.enable_deployer == false ? module.dns.dns_instance_id : []
+  dns_custom_resolver_id = module.dns.dns_custom_resolver_id
   compute_dns_zone_id = one(flatten([
     for dns_zone in module.dns.dns_zone_maps : values(dns_zone) if one(keys(dns_zone)) == var.dns_domain_names["compute"]
   ]))
@@ -104,26 +115,26 @@ locals {
   ]))
 
   # dependency: landing_zone_vsi -> dns-records
-  compute_instances  = flatten([module.landing_zone_vsi.management_vsi_data, module.landing_zone_vsi.compute_vsi_data])
-  storage_instances  = flatten([module.landing_zone_vsi.storage_vsi_data, module.landing_zone_vsi.protocol_vsi_data])
-  protocol_instances = flatten([module.landing_zone_vsi.protocol_vsi_data])
+  compute_instances_data  =  var.enable_deployer ? [] : flatten([module.landing_zone_vsi.management_vsi_data, module.landing_zone_vsi.compute_vsi_data])
+  storage_instances_data  =  var.enable_deployer ? [] : flatten([module.landing_zone_vsi.storage_vsi_data, module.landing_zone_vsi.protocol_vsi_data])
+  protocol_instances_data =  var.enable_deployer ? [] : flatten([module.landing_zone_vsi.protocol_vsi_data])
 
-  compute_dns_records = [
-    for instance in local.compute_instances :
+  compute_dns_records = var.enable_deployer ? [] : [
+    for instance in local.compute_instances_data :
     {
       name  = instance["name"]
       rdata = instance["ipv4_address"]
     }
   ]
-  storage_dns_records = [
-    for instance in local.storage_instances :
+  storage_dns_records = var.enable_deployer ? [] : [
+    for instance in local.storage_instances_data :
     {
       name  = instance["name"]
       rdata = instance["ipv4_address"]
     }
   ]
-  protocol_dns_records = [
-    for instance in local.protocol_instances :
+  protocol_dns_records = var.enable_deployer ? [] : [
+    for instance in local.protocol_instances_data :
     {
       name  = instance["name"]
       rdata = instance["ipv4_address"]
@@ -133,8 +144,8 @@ locals {
 
 # locals needed for inventory
 locals {
-  compute_hosts          = local.compute_instances[*]["ipv4_address"]
-  storage_hosts          = local.storage_instances[*]["ipv4_address"]
+  compute_hosts          = local.compute_instances_data[*]["ipv4_address"]
+  storage_hosts          = local.storage_instances_data[*]["ipv4_address"]
   compute_inventory_path = "compute.ini"
   storage_inventory_path = "storage.ini"
 }
@@ -146,5 +157,15 @@ locals {
   storage_private_key_path = "storage_id_rsa" #checkov:skip=CKV_SECRET_6
   compute_playbook_path    = "compute_ssh.yaml"
   storage_playbook_path    = "storage_ssh.yaml"
+
+
+
+  # dependency: landing_zone_vsi -> dns-records
+  client_instances_count          = var.enable_deployer ? [] : var.client_instances
+  static_compute_instances_count  = var.enable_deployer ? [] : var.static_compute_instances
+  management_instances_count      = var.enable_deployer ? [] : var.management_instances
+  storage_instances_count         = var.enable_deployer ? [] : var.storage_instances
+  protocol_instances_count        = var.enable_deployer ? [] : var.protocol_instances
+  dynamic_compute_instances_count = var.enable_deployer ? [] : var.dynamic_compute_instances
 }
 

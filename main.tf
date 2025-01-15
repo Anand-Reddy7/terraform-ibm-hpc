@@ -1,5 +1,7 @@
 module "landing_zone" {
+  #count                  = var.vpc == "" ? 1 : 0
   source                 = "./modules/landing_zone"
+  enable_landing_zone    = var.enable_landing_zone
   allowed_cidr           = var.allowed_cidr
   compute_subnets_cidr   = var.compute_subnets_cidr
   clusters               = var.clusters
@@ -19,7 +21,7 @@ module "landing_zone" {
   prefix                 = var.prefix
   protocol_instances     = var.protocol_instances
   protocol_subnets_cidr  = var.protocol_subnets_cidr
-  resource_group         = var.resource_group
+  resource_group         = var.resource_group #local.resource_group
   storage_instances      = var.storage_instances
   storage_subnets_cidr   = var.storage_subnets_cidr
   vpc                    = var.vpc
@@ -30,8 +32,9 @@ module "landing_zone" {
 }
 
 module "deployer" {
+  # count                      = var.enable_bastion == true && var.enable_deployer == true ? 1 : 0
   source                     = "./modules/deployer"
-  resource_group             = var.resource_group
+  resource_group             = local.resource_group
   prefix                     = var.prefix
   zones                      = var.zones
   vpc_id                     = local.vpc_id
@@ -48,11 +51,34 @@ module "deployer" {
   kms_encryption_enabled     = local.kms_encryption_enabled
   boot_volume_encryption_key = local.boot_volume_encryption_key
   existing_kms_instance_guid = local.existing_kms_instance_guid
+
+  # New Variables:
+  ibmcloud_api_key           = var.ibmcloud_api_key
+  ibm_customer_number        = var.ibm_customer_number
+  storage_instances          = var.storage_instances
+  protocol_instances         = var.protocol_instances
+  client_instances           = var.client_instances
+  compute_instances          = var.compute_instances
+  storage_ssh_keys           = local.storage_ssh_keys
+  compute_ssh_keys           = local.compute_ssh_keys
+  storage_subnets            = local.storage_subnets
+  protocol_subnets           = local.protocol_subnets
+  compute_subnets            = local.compute_subnets
+  client_subnets             = local.client_subnets
+  bastion_fip                = local.bastion_fip
+  dns_instance_id            = local.dns_instance_id
+  dns_custom_resolver_id     = local.dns_custom_resolver_id
+  dns_domain_names           = var.dns_domain_names
+  vpc                        = local.vpc
+  resource_group_id          = local.resource_group_ids["workload_rg"]
 }
 
 module "landing_zone_vsi" {
+  # count = var.enable_bastion == true && var.enable_deployer == false ? 1 : 0
+  # count = var.enable_bastion == true && var.enable_deployer == false ? 1 : 0
   source                     = "./modules/landing_zone_vsi"
-  resource_group             = var.resource_group
+  ibmcloud_api_key           = var.ibmcloud_api_key
+  resource_group             = local.resource_group_ids["workload_rg"]
   prefix                     = var.prefix
   zones                      = var.zones
   vpc_id                     = local.vpc_id
@@ -60,17 +86,17 @@ module "landing_zone_vsi" {
   bastion_public_key_content = local.bastion_public_key_content
   client_subnets             = local.client_subnets
   client_ssh_keys            = local.client_ssh_keys
-  client_instances           = var.client_instances
+  client_instances           = local.client_instances_count
   compute_subnets            = local.compute_subnets
   compute_ssh_keys           = local.compute_ssh_keys
-  management_instances       = var.management_instances
-  static_compute_instances   = var.static_compute_instances
-  dynamic_compute_instances  = var.dynamic_compute_instances
+  management_instances       = local.management_instances_count
+  static_compute_instances   = local.static_compute_instances_count
+  dynamic_compute_instances  = local.dynamic_compute_instances_count
   storage_subnets            = local.storage_subnets
   storage_ssh_keys           = local.storage_ssh_keys
-  storage_instances          = var.storage_instances
+  storage_instances          = local.storage_instances_count
   protocol_subnets           = local.protocol_subnets
-  protocol_instances         = var.protocol_instances
+  protocol_instances         = local.protocol_instances_count
   nsd_details                = var.nsd_details
   dns_domain_names           = var.dns_domain_names
   kms_encryption_enabled     = local.kms_encryption_enabled
@@ -78,9 +104,11 @@ module "landing_zone_vsi" {
 }
 
 module "file_storage" {
+  # count              = var.enable_deployer == false ? 1 : 0
   source             = "./modules/file_storage"
+  ibmcloud_api_key   = var.ibmcloud_api_key
   zone               = var.zones[0] # always the first zone
-  resource_group_id  = local.resource_group_id
+  resource_group_id  = local.resource_group_ids["service_rg"]
   file_shares        = local.file_shares
   encryption_key_crn = local.boot_volume_encryption_key
   security_group_ids = local.compute_security_group_id
@@ -88,9 +116,11 @@ module "file_storage" {
 }
 
 module "dns" {
+  # count              = var.enable_deployer == false ? 1 : 0
   source                 = "./modules/dns"
+  ibmcloud_api_key       = var.ibmcloud_api_key
   prefix                 = var.prefix
-  resource_group_id      = local.resource_group_id
+  resource_group_id      = local.resource_group_ids["service_rg"]
   vpc_crn                = local.vpc_crn
   subnets_crn            = local.subnets_crn
   dns_instance_id        = var.dns_instance_id
@@ -99,39 +129,48 @@ module "dns" {
 }
 
 module "compute_dns_records" {
-  source          = "./modules/dns_record"
-  dns_instance_id = local.dns_instance_id
-  dns_zone_id     = local.compute_dns_zone_id
-  dns_records     = local.compute_dns_records
+  # count              = var.enable_deployer == false ? 1 : 0
+  source           = "./modules/dns_record"
+  ibmcloud_api_key = var.ibmcloud_api_key
+  dns_instance_id  = local.dns_instance_id
+  dns_zone_id      = local.compute_dns_zone_id
+  dns_records      = local.compute_dns_records
 }
 
 module "storage_dns_records" {
-  source          = "./modules/dns_record"
-  dns_instance_id = local.dns_instance_id
-  dns_zone_id     = local.storage_dns_zone_id
-  dns_records     = local.storage_dns_records
+  # count              = var.enable_deployer == false ? 1 : 0
+  source           = "./modules/dns_record"
+  ibmcloud_api_key = var.ibmcloud_api_key
+  dns_instance_id  = local.dns_instance_id
+  dns_zone_id      = local.storage_dns_zone_id
+  dns_records      = local.storage_dns_records
 }
 
 module "protocol_dns_records" {
-  source          = "./modules/dns_record"
-  dns_instance_id = local.dns_instance_id
-  dns_zone_id     = local.protocol_dns_zone_id
-  dns_records     = local.protocol_dns_records
+  # count              = var.enable_deployer == false ? 1 : 0
+  source           = "./modules/dns_record"
+  ibmcloud_api_key = var.ibmcloud_api_key
+  dns_instance_id  = local.dns_instance_id
+  dns_zone_id      = local.protocol_dns_zone_id
+  dns_records      = local.protocol_dns_records
 }
 
 module "compute_inventory" {
+  # count              = var.enable_deployer == false ? 1 : 0
   source         = "./modules/inventory"
   hosts          = local.compute_hosts
   inventory_path = local.compute_inventory_path
 }
 
 module "storage_inventory" {
+  # count              = var.enable_deployer == false ? 1 : 0
   source         = "./modules/inventory"
   hosts          = local.storage_hosts
   inventory_path = local.storage_inventory_path
 }
 
 module "compute_playbook" {
+  # count              = var.enable_deployer == false ? 1 : 0
   source           = "./modules/playbook"
   bastion_fip      = local.bastion_fip
   private_key_path = local.compute_private_key_path
@@ -141,6 +180,7 @@ module "compute_playbook" {
 }
 
 module "storage_playbook" {
+  # count              = var.enable_deployer == false ? 1 : 0
   source           = "./modules/playbook"
   bastion_fip      = local.bastion_fip
   private_key_path = local.storage_private_key_path

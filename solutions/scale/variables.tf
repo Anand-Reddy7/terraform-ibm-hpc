@@ -473,3 +473,51 @@ variable "override_json_string" {
   default     = null
   description = "Override default values with a JSON object. Any JSON other than an empty string overrides other configuration changes."
 }
+
+
+# New Variables
+
+variable "storage_subnets" {
+  # type        = string
+  default     = null
+  description = "Subnets to launch the storage host."
+}
+variable "protocol_subnets" {
+  # type        = string
+  default     = null
+  description = "Subnets to launch the protocol host."
+}
+variable "compute_subnets" {
+  # type        = string
+  default     = null
+  description = "Subnets to launch the compute host."
+}
+variable "client_subnets" {
+  # type        = string
+  default     = null
+  description = "Subnets to launch the client host."
+}
+
+variable "vpc_id" {
+  type        = string
+  default     = null
+  description = "ID of an existing VPC in which the cluster resources will be deployed."
+}
+
+variable "bastion_fip" {
+  type        = string
+  default     = null
+  description = "bastion fip"
+}
+
+variable "enable_landing_zone" {
+  type        = bool
+  default     = true
+  description = "Run landing zone module."
+}
+
+variable "bastion_public_key_content" {
+  type        = string
+  default     = null
+  description = "bastion fip"
+}

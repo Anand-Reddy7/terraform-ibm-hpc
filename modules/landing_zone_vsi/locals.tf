@@ -15,7 +15,7 @@ locals {
     profile        = volume["profile"]
     capacity       = volume["capacity"]
     iops           = volume["iops"]
-    resource_group = local.resource_group_id
+    resource_group = var.resource_group
     # TODO: Encryption
     # encryption_key =
   }]
@@ -38,11 +38,11 @@ locals {
   }]
   */
 
-  client_instance_count         = sum(var.client_instances[*]["count"])
-  management_instance_count     = sum(var.management_instances[*]["count"])
-  storage_instance_count        = sum(var.storage_instances[*]["count"])
-  protocol_instance_count       = sum(var.protocol_instances[*]["count"])
-  static_compute_instance_count = sum(var.static_compute_instances[*]["count"])
+  client_instance_count         = length(var.client_instances) > 0 ? sum(var.client_instances[*]["count"]) : 0
+  management_instance_count     = length(var.management_instances) > 0 ? sum(var.management_instances[*]["count"]) : 0
+  static_compute_instance_count = length(var.static_compute_instances) > 0 ? sum(var.static_compute_instances[*]["count"]) : 0
+  storage_instance_count        = length(var.storage_instances) > 0 ? sum(var.storage_instances[*]["count"]) : 0
+  protocol_instance_count       = length(var.protocol_instances) > 0 ? sum(var.protocol_instances[*]["count"]) : 0
 
   enable_client     = local.client_instance_count > 0
   enable_management = local.management_instance_count > 0
@@ -245,7 +245,7 @@ locals {
 
   # Derived configs
   # VPC
-  resource_group_id = data.ibm_resource_group.itself.id
+  # resource_group_id = data.ibm_resource_group.itself.id
 
   # Subnets
   # TODO: Multi-zone multi-vNIC VSIs deployment support (bug #https://github.ibm.com/GoldenEye/issues/issues/5830)

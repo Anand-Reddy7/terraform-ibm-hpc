@@ -686,3 +686,76 @@ variable "TF_LOG" {
   default     = "ERROR"
   description = "The Terraform log level used for output in the Schematics workspace."
 }
+
+# New Variables
+
+variable "compute_instances" {
+  type = list(
+    object({
+      profile = string
+      count   = number
+      image   = string
+    })
+  )
+  default = [{
+    profile = "cx2-2x4"
+    count   = 0
+    image   = "ibm-redhat-8-10-minimal-amd64-2"
+  }]
+  description = "Min Number of instances to be launched for compute cluster."
+}
+
+variable "enable_landing_zone" {
+  type        = bool
+  default     = true
+  description = "Run landing zone module."
+}
+
+variable "storage_subnets" {
+  # type        = string
+  default     = null
+  description = "Subnets to launch the storage host."
+}
+variable "protocol_subnets" {
+  # type        = string
+  default     = null
+  description = "Subnets to launch the protocol host."
+}
+variable "compute_subnets" {
+  # type        = string
+  default     = null
+  description = "Subnets to launch the compute host."
+}
+variable "client_subnets" {
+  # type        = string
+  default     = null
+  description = "Subnets to launch the client host."
+}
+variable "bastion_fip" {
+  type        = string
+  default     = null
+  description = "bastion fip"
+}
+
+
+variable "vpc_id" {
+  type        = string
+  default     = null
+  description = "ID of an existing VPC in which the cluster resources will be deployed."
+}
+variable "bastion_public_key_content" {
+  type        = string
+  sensitive   = true
+  default     = null
+  description = "Bastion security group id."
+}
+variable "boot_volume_encryption_key" {
+  type        = string
+  default     = null
+  description = "CRN of boot volume encryption key"
+}
+variable "resource_group_id" {
+  description = "String describing resource groups to create or reference"
+  type        = string
+  default     = null
+}
