@@ -47,6 +47,7 @@ resource "local_file" "create_playbook" {
   roles:
      - vpc_fileshare_configure
      - lsf
+     - lsf-network-config
 EOT
   filename = var.playbook_path
 }
