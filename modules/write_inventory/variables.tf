@@ -63,3 +63,47 @@ variable "lsf_deployer_hostname" {
   default     = null
   description = "Deployer host name"
 }
+
+variable "cluster_prefix" {
+  type        = string
+  default     = null
+  description = "Cluter Prefix"
+}
+
+variable "hyperthreading" {
+  type        = bool
+  default     = null
+  description = "Enable Hyperthreading"
+}
+
+variable "rc_cidr_block" {
+  type        = string
+  default     = null
+  description = "Compute subnet CIDR range"
+}
+
+variable "compute_public_key_content" {
+  type        = string
+  default     = null
+  description = "Public Key"
+}
+
+variable "compute_private_key_content" {
+  type        = string
+  default     = null
+  description = "Private Key"
+}
+
+variable "dns_domain_names" {
+  type = object({
+    compute  = string
+    storage  = string
+    protocol = string
+  })
+  default = {
+    compute  = "comp.com"
+    storage  = "strg.com"
+    protocol = "ces.com"
+  }
+  description = "IBM Cloud HPC DNS domain names."
+}

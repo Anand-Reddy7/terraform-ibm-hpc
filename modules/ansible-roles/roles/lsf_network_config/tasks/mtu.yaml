@@ -3,23 +3,23 @@
   block:
     - name: Set MTU and Domain in network script
       ansible.builtin.blockinfile:
-        path: "/etc/sysconfig/network-scripts/ifcfg-{{ NETWORK_INTERFACE }}"
+        path: "/etc/sysconfig/network-scripts/ifcfg-{{ network_interface }}"
         block: |
           MTU=9000
-          DOMAIN="{{ DNS_DOMAIN }}"
+          DOMAIN={{ dns_domain_names.compute }}
         marker: "# {mark} ANSIBLE MANAGED BLOCK"
 
     - name: Get default gateway and CIDR range
       ansible.builtin.shell: |
         gateway_ip=$(ip route | grep default | awk '{print $3}' | head -n 1)
         cidr_range=$(ip route show | grep "kernel" | awk '{print $1}' | head -n 1)
-        echo "$cidr_range via $gateway_ip dev {{ NETWORK_INTERFACE }} metric 0 mtu 9000"
+        echo "$cidr_range via $gateway_ip dev {{ network_interface }} metric 0 mtu 9000"
       register: rhel_route
       changed_when: false
 
     - name: Set MTU at the router level
       ansible.builtin.lineinfile:
-        path: "/etc/sysconfig/network-scripts/route-{{ NETWORK_INTERFACE }}"
+        path: "/etc/sysconfig/network-scripts/route-{{ network_interface }}"
         line: "{{ rhel_route.stdout }}"
         create: yes
 

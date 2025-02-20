@@ -58,3 +58,5 @@ localtweak__*.tf
 
 # tests folder log file
 *.log
+
+*id_rsa

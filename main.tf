@@ -130,7 +130,9 @@ resource "local_sensitive_file" "prepare_tf_input" {
   "compute_private_key_content": ${local.compute_private_key_content},
   "bastion_security_group_id": "${local.bastion_security_group_id}",
   "deployer_hostname": "${local.deployer_hostname}",
-  "deployer_ip": "${local.deployer_ip}"
+  "deployer_ip": "${local.deployer_ip}",
+  "enable_hyperthreading": "${local.enable_hyperthreading}",
+  "compute_subnets_cidr": "${var.compute_subnets_cidr}"
 }    
 EOT
   filename = local.schematics_inputs_path
@@ -274,6 +276,11 @@ module "write_compute_cluster_inventory" {
   nfs_install_dir       = local.nfs_install_dir
   Enable_Monitoring     = local.Enable_Monitoring
   lsf_deployer_hostname = local.lsf_deployer_hostname
+  enable_hyperthreading = local.enable_hyperthreading
+  compute_subnets_cidr  = var.compute_subnets_cidr
+  compute_public_key_content = var.compute_public_key_content
+  compute_private_key_content = var.compute_private_key_content
+  dns_domain_names      = local.dns_domain_names
   depends_on            = [ time_sleep.wait_60_seconds ]
 }
 

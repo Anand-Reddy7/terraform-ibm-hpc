@@ -9,7 +9,7 @@
 
 - name: Create LSF hyperthreading script for disabling threads if hyperthreading is false
   copy:
-    dest: /root/lsf_hyperthreading
+    dest: "{{ hyperthreading_file }}"
     content: |
       #!/bin/sh
       for vcpu in $(cat /sys/devices/system/cpu/cpu*/topology/thread_siblings_list | cut -s -d- -f2 | cut -d- -f2 | uniq); do
@@ -19,14 +19,14 @@
   when: not hyperthreading
 
 - name: Run the hyperthreading script and add to cron if hyperthreading is false
-  shell: /root/lsf_hyperthreading
+  shell: "{{ hyperthreading_file }}"
   when: not hyperthreading
 
 - name: Add script to cron for reboot if hyperthreading is false
   cron:
     name: "Disable Hyperthreading"
     special_time: reboot
-    job: "/root/lsf_hyperthreading"
+    job: "{{ hyperthreading_file }}"
   when: not hyperthreading
 
 - name: Set the EGO_DEFINE_NCPUS in LSF config file

@@ -1,18 +1,3 @@
 
-SYSCTL_CONF: "/etc/sysctl.conf"
-NETWORK_INTERFACE: "eth0"
-DNS_DOMAIN: "comp.com"
-hyperthreading: false
-LSF_CONF_FILE: "/opt/ibm/lsfsuite/lsf/conf/lsf.conf"
-
-
-LSF_CONF_FILE_PATH: "/opt/ibm/lsfsuite/lsf/conf"
-LSF_CONF_FILE: "{{ LSF_CONF_FILE_PATH }}/lsf.conf"
-LSF_RC_IC_CONF: "{{ LSF_CONF_FILE_PATH }}/resource_connector/ibmcloudgen2/conf"
-cluster_prefix: "anand-dynamic7"
-ManagementHostNames: "anand-dynamic7-mgmt-8bad-001 anand-dynamic7-mgmt-8bad-002"
-cluster_name: "anandDa"
-LSF_LSBATCH_CONF: "{{ LSF_CONF_FILE }}/lsbatch/{{ cluster_name }}/configdir"
-rc_cidr_block: "10.10.20.0/24"
-LSF_HOSTS_FILE: "{{ LSF_CONF_FILE }}/hosts"
-LSF_EGO_CONF_FILE: "{{ LSF_CONF_FILE }}/ego/{{ cluster_name }}/kernel/ego.conf"
+sysctl_conf: "/etc/sysctl.conf"  
+network_interface: "eth0"

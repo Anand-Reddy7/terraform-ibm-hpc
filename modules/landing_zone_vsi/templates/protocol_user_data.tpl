@@ -36,14 +36,5 @@ then
     fi
 fi
 
-# network setup
-echo "DOMAIN=${storage_dns_domain}" >> "/etc/sysconfig/network-scripts/ifcfg-${storage_interfaces}"
-echo "MTU=9000" >> "/etc/sysconfig/network-scripts/ifcfg-${storage_interfaces}"
+# Update the vpcuser to never expire
 chage -I -1 -m 0 -M 99999 -E -1 -W 14 vpcuser
-sleep 120
-systemctl restart NetworkManager
-
-# protocol network setup
-echo "DOMAIN=${protocol_dns_domain}" >> "/etc/sysconfig/network-scripts/ifcfg-${protocol_interfaces}"
-echo "MTU=9000" >> "/etc/sysconfig/network-scripts/ifcfg"${protocol_interfaces}"
-systemctl restart NetworkManager

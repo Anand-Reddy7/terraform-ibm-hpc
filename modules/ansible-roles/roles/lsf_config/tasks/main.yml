@@ -1,0 +1,9 @@
+---
+
+ - import_tasks: hyper_threading.yml
+
+ - import_tasks: ssh_password_less.yml
+
+ - import_tasks: management_config.yml
+
+ - import_tasks: dynamic_nodes_template.yml

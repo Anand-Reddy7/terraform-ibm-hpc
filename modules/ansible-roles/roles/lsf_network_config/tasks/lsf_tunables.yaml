@@ -2,7 +2,7 @@
 ---
 - name: Networking | Ensure sysctl parameters are set
   ansible.builtin.lineinfile:
-    path: "{{ SYSCTL_CONF }}"
+    path: "{{ sysctl_conf }}"
     line: "{{ item }}"
     create: yes
   loop:
@@ -16,5 +16,5 @@
 
 - name: Networking | Apply sysctl settings
   ansible.builtin.command:
-    cmd: sysctl -p "{{ SYSCTL_CONF }}"
+    cmd: sysctl -p "{{ sysctl_conf }}"
   changed_when: false
